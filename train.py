@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import argparse
 from src.data import DatasetLoader
 from src.model import Classifier
 
@@ -86,11 +87,18 @@ class Trainer:
         print(f"Best val acc: {self.best_acc:.4f}")
 
 if __name__=="__main__":
-    data_dir = "./datasets"
+    parser = argparse.ArgumentParser(description="Train fake image detection model")
+    parser.add_argument("--data_dir", type=str, default="./datasets", help="datasets path")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("--epochs", type=int, default=50, help="Training epochs")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument("--save_path", type=str, default="moire.onnx", help="Save path model")
+    args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset_loader = DatasetLoader(data_dir, batch_size=32)
+    print("DEVICE: ", device)
+    dataset_loader = DatasetLoader(data_dir=args.data_dir, batch_size=args.batch_size)
     train_loader, val_loader, train_size, val_size = dataset_loader.get_dataloaders()
     model = Classifier(num_classes=2, pretrained=True)
     trainer = Trainer(model, train_loader, val_loader, train_size, val_size, device,
-                      lr=1e-4, epochs=5, save_path="moire.pth")
+                      lr=args.lr, epochs=args.epochs, save_path=args.save_path)
     trainer.train()
