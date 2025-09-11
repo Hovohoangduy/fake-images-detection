@@ -18,7 +18,7 @@ class Trainer:
         self.save_path = save_path
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(self.model.model.fc.parameters(), lr=lr)
+        self.optimizer = optim.Adam(self.model.model.classifier.parameters(), lr=lr)
         self.best_acc = 0.0
 
     def train_one_epoch(self, epoch):
