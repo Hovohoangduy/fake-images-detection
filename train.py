@@ -18,7 +18,7 @@ class Trainer:
         self.save_path = save_path
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(self.model.model.classifier.parameters(), lr=lr)
+        self.optimizer = optim.Adam(self.model.model.fc.parameters(), lr=lr)
         self.best_acc = 0.0
 
     def train_one_epoch(self, epoch):
@@ -98,7 +98,7 @@ if __name__=="__main__":
     print("DEVICE: ", device)
     dataset_loader = DatasetLoader(data_dir=args.data_dir, batch_size=args.batch_size)
     train_loader, val_loader, train_size, val_size = dataset_loader.get_dataloaders()
-    model = Classifier(num_classes=2, pretrained=True)
+    model = Classifier(num_classes=2, pretrained=True, freeze_backbone=True)
     trainer = Trainer(model, train_loader, val_loader, train_size, val_size, device,
                       lr=args.lr, epochs=args.epochs, save_path=args.save_path)
     trainer.train()
