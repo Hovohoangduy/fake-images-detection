@@ -1,0 +1,7 @@
+__pycache__
+.pth
+moire.onnx
+onnx-vit
+tmp-vit
+tmp
+*.jpg
