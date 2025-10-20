@@ -3,3 +3,6 @@ __pycache__
 moire.onnx
 onnx-vit
 tmp-vit
+tmp-vit
+tmp
+*.jpg
