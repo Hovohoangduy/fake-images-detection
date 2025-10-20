@@ -4,11 +4,6 @@ import torch.optim as optim
 import argparse
 from src.data import DatasetLoader
 from src.model import Classifier
-from optimum.onnxruntime import ORTModelForImageClassification
-import warnings, os
-
-warnings.filterwarnings("ignore")
-os.environ["PYTHONWARNINGS"] = "ignore"
 
 class Trainer:
     def __init__(self, model, train_loader, val_loader, train_size, val_size,
@@ -23,9 +18,7 @@ class Trainer:
         self.save_path = save_path
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(
-            filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr
-        )
+        self.optimizer = optim.Adam(self.model.model.fc.parameters(), lr=lr)
         self.best_acc = 0.0
 
     def train_one_epoch(self, epoch):
@@ -76,17 +69,21 @@ class Trainer:
             print(F"Epoch [{epoch+1}/{self.epochs}] "
                 f"Train loss: {train_loss:.4f}, Train acc: {train_acc:.4f} | "
                 f"Val loss: {val_loss:.4f}, Val acc: {val_acc:.4f}")
-            
             if val_acc > self.best_acc:
                 self.best_acc = val_acc
-                # Export sang ONNX
-                self.model.model.save_pretrained("./tmp-vit")
-                ort_model = ORTModelForImageClassification.from_pretrained(
-                    "./tmp-vit", export=True
+                onnx_path = self.save_path.replace(".pth", ".onnx")
+                dummy_input = torch.randn(1, 3, 224, 224, device=self.device)
+                torch.onnx.export(
+                    self.model,
+                    dummy_input,
+                    onnx_path,
+                    export_params=True,
+                    opset_version=12,
+                    do_constant_folding=True,
+                    input_names=["input"],
+                    output_names=["output"],
+                    dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}}
                 )
-                ort_model.save_pretrained("./onnx-vit")
-                print(f"Saved ONNX model at epoch {epoch+1}")
-
         print(f"Best val acc: {self.best_acc:.4f}")
 
 if __name__=="__main__":

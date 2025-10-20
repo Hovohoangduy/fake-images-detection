@@ -1,27 +1,29 @@
 import torch
 from torchvision import models
 import torch.nn as nn
-from transformers import ViTForImageClassification, SwinForImageClassification, DeiTForImageClassification
 
 class Classifier(nn.Module):
     def __init__(self, num_classes=2, pretrained=True, freeze_backbone=True):
-        super().__init__()
-        model_name = "facebook/deit-base-distilled-patch16-224"
-        if pretrained:
-            self.model = DeiTForImageClassification.from_pretrained(
-                model_name,
-                num_labels=num_classes,
-                ignore_mismatched_sizes=True
-            )
-        else:
-            config = DeiTForImageClassification.config_class.from_pretrained(model_name)
-            config.num_labels = num_classes
-            self.model = DeiTForImageClassification(config)
-
+        super(Classifier, self).__init__()
+        weights = models.ResNet152_Weights.IMAGENET1K_V2 if pretrained else None
+        self.model = models.resnet152(weights=weights)
         if freeze_backbone:
-            for name, param in self.model.named_parameters():
-                if "classifier" not in name:  # chỉ fine-tune head
-                    param.requires_grad = False
+            for param in self.model.parameters():
+                param.requires_grad = False
+
+        in_features = self.model.fc.in_features
+        self.model.fc = nn.Sequential(
+            nn.Linear(in_features, 512),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, num_classes)
+        )
+
+        for param in self.model.fc.parameters():
+            param.requires_grad = True
 
     def forward(self, x):
-        return self.model(x).logits
+        return self.model(x)
